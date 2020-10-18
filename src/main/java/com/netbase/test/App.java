@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -21,19 +22,19 @@ public class App
 {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(12);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            executor.shutdownNow();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(executor::shutdownNow));
 
-        File[] files = new File(args[0]).listFiles();
-        if (files == null) {
-            System.out.println("Invalid directory provided!");
+        File[] files;
+        try {
+            files = new File(args[0]).listFiles();
+        } catch (Exception e) {
+            System.out.println("Please provide a valid directory!");
             return;
         }
 
         Map<String, LongAdder> outputCounts = new ConcurrentHashMap<>();
         List<Future<Void>> futureList = new ArrayList<>();
-        for (File fileEntry : files) {
+        for (File fileEntry : Objects.requireNonNull(files)) {
             if (fileEntry.isDirectory()) {
                 continue;
             }
@@ -81,10 +82,10 @@ public class App
         String outputKey = k + ", " + probability;
         outputCounts.compute(outputKey, (key, value) -> {
             if (value == null) {
-                System.out.println(key + ": 1");
+                System.out.println(key + ", 1");
                 return new LongAdder();
             }
-            System.out.println(key + ": " + (value.sum() + 1));
+            System.out.println(key + ", " + (value.sum() + 1));
             return value;
         }).increment();
     }
